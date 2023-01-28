@@ -1,0 +1,75 @@
+Select
+
+TN.Safra as Safra
+, Programacao.Status as status
+, TN.NumeroContrato as contrato
+, TN.NumeroTn as tn
+, TN.CodigoProduto as item
+, TN.TipoOperacao as tpfrt
+
+, Coleta.Address as address_coleta
+
+,CASE WHEN Coleta.Descricao IS NULL THEN Coleta.Nome
+WHEN Coleta.Descricao = '' THEN Coleta.Nome
+ELSE Coleta.Descricao END AS descricao
+
+, Coleta.Cidade as cidade_origem
+, Coleta.uf as uf_origem
+
+, Shipto.Address as address_shipt_to
+, TN.CidadeDestino as cidade_destino
+, Shipto.uf as uf_destino
+
+, Format(ProgramacaoDia.Data, 'yyyy-MM-dd') as data_embarque
+, ProgramacaoDia.QtdCarregamento as qtd_carreg
+, Preco.preco
+, Transportadora.Address as address_transp
+, Transportadora.RazaoSocial as nome_transp
+, Regional.Nome as regional
+
+FROM 
+cmm.TransportNotification as TN
+
+Join cmm.Programacao as Programacao on Programacao.IdTn = TN.IdTransportNotification
+Join cmm.ProgramacaoDia as ProgramacaoDia on ProgramacaoDia.IdProgramacao = Programacao.IdProgramacao
+Join cmm.Transportadora as Transportadora on Transportadora.IdTransportadora = Programacao.IdTransportadora
+Join cmm.Bp as BpCompra on BpCompra.IdBp = TN.IdBpCompra
+Join cmm.Bp as BpDestino on BpDestino.IdBp = TN.IdBpDestino
+Left Join cmm.Regional as Regional on Regional.IdRegional = BpCompra.IdRegional
+Left Join cmm.Cliente as Shipto on Shipto.IdCliente = TN.IdShipTo
+Left Join cmm.Cliente as Coleta on Coleta.IdCliente = TN.IdColeta
+
+Left join
+(SELECT IdTransportNotification, 
+AVG(Preco) as preco
+FROM 
+cmm.PrecoProgramacao
+
+WHERE FimVigencia IS NULL 
+AND InicioVigencia <= CAST(GETDATE() AS Date)
+
+GROUP BY 
+IdTransportNotification) as Preco 
+
+ON Preco.IdTransportNotification = TN.IdTransportNotification
+
+WHERE 
+
+ProgramacaoDia.QtdCarregamento > 0
+
+AND Programacao.Status not in (2,3) -- Isolo apenas os tipos de linhas que quero ver 
+
+-- 0 - Pendente
+-- 1 - Programado
+-- 2 - Finalizado
+-- 3 - Substituido
+
+--AND TN.NumeroTn = '333323'  -- Caso eu precise isolar apenas um ponto de embarque
+
+AND Transportadora.RazaoSocial IN ('CARGILL TRANSPORTES LTDA', 'CARGILL TRANSPORTES') -- Isola apenas cotas da Cargill Transportes
+
+AND Format(ProgramacaoDia.Data, 'yyyy-MM-dd') >= CAST(GETDATE()-5 AS Date)
+
+AND Format(ProgramacaoDia.Data, 'yyyy-MM-dd') <= CAST(GETDATE() AS Date)
+
+AND Regional.Nome in ('VLA','MTL','MTB','MTO') -- Apenas a regional do MT
