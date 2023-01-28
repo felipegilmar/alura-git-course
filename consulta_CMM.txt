@@ -1,6 +1,6 @@
 Select
 
-TN.Safra as Safra
+TN.Safra as Safrinha
 , Programacao.Status as status
 , TN.NumeroContrato as contrato
 , TN.NumeroTn as tn
