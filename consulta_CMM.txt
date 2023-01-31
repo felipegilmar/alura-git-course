@@ -13,7 +13,7 @@ TN.Safra as Safrinha
 WHEN Coleta.Descricao = '' THEN Coleta.Nome
 ELSE Coleta.Descricao END AS descricao
 
-, Coleta.Cidade as cidade_origem
+, Coleta.Cidade as cidade_origem -- teste teste teste
 , Coleta.uf as uf_origem
 
 , Shipto.Address as address_shipt_to
